@@ -1,0 +1,16 @@
+# Build artifacts
+/bin/
+/dist/
+cover.out
+*.test
+*.prof
+
+# Editor / OS noise
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Local kube/kubeconfig (never commit)
+kubeconfig
+.kube/

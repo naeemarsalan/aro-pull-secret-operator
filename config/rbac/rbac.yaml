@@ -1,0 +1,98 @@
+# ServiceAccount used by the operator.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: aro-pull-secret-operator
+  namespace: aro-pull-secret-operator
+---
+# Read-only on the cluster pull secret namespace. The operator needs to
+# watch openshift-config/pull-secret cluster-wide membership but only
+# reads/writes that specific Secret. We scope to the namespace via Role.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: aro-pull-secret-operator-openshift-config
+  namespace: openshift-config
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aro-pull-secret-operator-openshift-config
+  namespace: openshift-config
+subjects:
+  - kind: ServiceAccount
+    name: aro-pull-secret-operator
+    namespace: aro-pull-secret-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: aro-pull-secret-operator-openshift-config
+---
+# The operator stores the original-pull-secret snapshot and watches
+# user-provided additional pull secrets in kube-system. Scoped to that
+# namespace only.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: aro-pull-secret-operator-kube-system
+  namespace: kube-system
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aro-pull-secret-operator-kube-system
+  namespace: kube-system
+subjects:
+  - kind: ServiceAccount
+    name: aro-pull-secret-operator
+    namespace: aro-pull-secret-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: aro-pull-secret-operator-kube-system
+---
+# Leader election lease + local event emission live in the operator's
+# own namespace.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: aro-pull-secret-operator-leader-election
+  namespace: aro-pull-secret-operator
+rules:
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aro-pull-secret-operator-leader-election
+  namespace: aro-pull-secret-operator
+subjects:
+  - kind: ServiceAccount
+    name: aro-pull-secret-operator
+    namespace: aro-pull-secret-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: aro-pull-secret-operator-leader-election

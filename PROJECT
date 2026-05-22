@@ -1,0 +1,12 @@
+domain: openshift.io
+layout:
+  - go.kubebuilder.io/v4
+projectName: aro-pull-secret-operator
+repo: github.com/naeemarsalan/aro-pull-secret-operator
+version: "3"
+resources:
+  - controller: true
+    domain: openshift.io
+    group: ""
+    kind: Secret
+    version: v1

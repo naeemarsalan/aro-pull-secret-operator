@@ -1,0 +1,5 @@
+component: "ARO Pull Secret Operator"
+approvers:
+  - naeemarsalan
+reviewers:
+  - naeemarsalan
