@@ -29,27 +29,18 @@ hand-merged the secret yourself.
 
 ## Behaviour
 
-```
-                ┌─────────────────────────────┐
-                │  kube-system/                │
-                │    additional-pull-secret-*  │  ◀── user drops these
-                │  (label: pullsecret.         │
-                │   openshift.io/include=      │
-                │   additional)               │
-                └──────────────┬──────────────┘
-                               │ list+watch
-                               ▼
-        ┌──────────────────────────────────────────┐
-        │  aro-pull-secret-operator (this)          │
-        │  - on first run, snapshots               │
-        │    openshift-config/pull-secret to       │
-        │    kube-system/original-pull-secret      │
-        │  - merges (original + additional)         │
-        │  - writes openshift-config/pull-secret    │
-        └──────────────┬───────────────────────────┘
-                       │ patch
-                       ▼
-        openshift-config/pull-secret  ──── MCO ───▶ nodes
+```mermaid
+flowchart TB
+    user["user creates labeled Secrets<br/>kube-system/additional-pull-secret-*<br/><i>label: pullsecret.openshift.io/include=additional</i>"]
+    op["aro-pull-secret-operator<br/>1. snapshot openshift-config/pull-secret<br/>&nbsp;&nbsp;&nbsp;&nbsp;→ kube-system/original-pull-secret (once)<br/>2. merge snapshot + all labeled secrets<br/>&nbsp;&nbsp;&nbsp;&nbsp;(snapshot wins on registry conflict)<br/>3. patch openshift-config/pull-secret"]
+    ps["openshift-config/pull-secret"]
+    mco["Machine Config Operator"]
+    nodes["/var/lib/kubelet/config.json<br/>on every node"]
+
+    user -- "watch" --> op
+    op -- "patch" --> ps
+    ps -- "render" --> mco
+    mco -- "propagate" --> nodes
 ```
 
 ### Conflict policy
